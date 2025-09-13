@@ -13,12 +13,10 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import de.immotool.haeusertool.model.Property;
 import de.immotool.haeusertool.repo.PropertyRepository;
-import jakarta.annotation.security.PermitAll;
+
 
 @Route(value = "properties", layout = MainLayout.class)
-@RouteAlias(value = "", layout = MainLayout.class) // nach Login direkt hierhin
-@PageTitle("Objekte")
-@PermitAll // erlaubt allen angemeldeten Nutzern
+@jakarta.annotation.security.PermitAll // erlaubt allen angemeldeten Nutzern
 public class PropertyView extends VerticalLayout {
 
     private final PropertyRepository repo;

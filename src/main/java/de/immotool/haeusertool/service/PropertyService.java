@@ -3,7 +3,6 @@ package de.immotool.haeusertool.service;
 import de.immotool.haeusertool.model.Property;
 import de.immotool.haeusertool.repo.PropertyRepository;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

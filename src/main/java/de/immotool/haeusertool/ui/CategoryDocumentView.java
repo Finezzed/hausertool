@@ -20,15 +20,16 @@ import java.util.List;
 import java.util.Locale;
 
 @Route(value = "docs", layout = MainLayout.class) // technischer Haupt-Route
-@RouteAlias("steuer")
-@RouteAlias("allgemeine-rechnungen")
-@RouteAlias("rechner-und-kalkulationen")
-@RouteAlias("vorlagen")
-@RouteAlias("banken")
-@RouteAlias("allgemeine-infos")
-@RouteAlias("vereine-und-firmen")
-@RouteAlias("behoerden")
-@RouteAlias("it-und-passwoerter")
+@RouteAlias(value = "todos", layout = MainLayout.class)
+@RouteAlias(value = "steuer", layout = MainLayout.class)
+@RouteAlias(value = "allgemeine-rechnungen", layout = MainLayout.class)
+@RouteAlias(value = "rechner-und-kalkulationen", layout = MainLayout.class)
+@RouteAlias(value = "vorlagen", layout = MainLayout.class)
+@RouteAlias(value = "banken", layout = MainLayout.class)
+@RouteAlias(value = "allgemeine-infos", layout = MainLayout.class)
+@RouteAlias(value = "vereine-und-firmen", layout = MainLayout.class)
+@RouteAlias(value = "behoerden", layout = MainLayout.class)
+@RouteAlias(value = "it-und-passwoerter", layout = MainLayout.class)
 @PageTitle("Dokumente")
 @PermitAll
 public class CategoryDocumentView extends VerticalLayout implements BeforeEnterObserver {
@@ -95,8 +96,22 @@ public class CategoryDocumentView extends VerticalLayout implements BeforeEnterO
         grid.addColumn(Document::getId).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(Document::getTitle).setHeader("Titel").setAutoWidth(true);
         grid.addColumn(Document::getOriginalFilename).setHeader("Datei").setAutoWidth(true);
-        grid.addComponentColumn(d -> new Anchor("/files/"+d.getId()+"?inline=true","Öffnen"));
-        grid.addComponentColumn(d -> new Button("Löschen", e -> { docService.delete(d.getId()); reloadDocs(); }));
+
+        grid.addComponentColumn(d -> {
+            Anchor open = new Anchor("/files/" + d.getId() + "?inline=true", "Öffnen");
+            open.getElement().setAttribute("router-ignore", true);  // wichtig!
+            open.setTarget("_blank");                               // optional: neuer Tab
+            return open;
+        }).setHeader("");
+
+        grid.addComponentColumn(d -> {
+            Anchor dl = new Anchor("/files/" + d.getId(), "Download");
+            dl.getElement().setAttribute("router-ignore", true);    // wichtig!
+            return dl;
+        }).setHeader("");
+
+        grid.addComponentColumn(d -> new Button("Löschen", e -> { docService.delete(d.getId()); reloadDocs(); }))
+                .setHeader("");
 
         var right = new VerticalLayout(rightTop, grid);
         right.setSizeFull(); right.setPadding(false); grid.setSizeFull();
