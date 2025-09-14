@@ -1,82 +1,96 @@
+// src/main/java/de/immotool/haeusertool/ui/PropertyView.java
 package de.immotool.haeusertool.ui;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.NumberField;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouteAlias;
 import de.immotool.haeusertool.model.Property;
-import de.immotool.haeusertool.repo.PropertyRepository;
-
+import de.immotool.haeusertool.service.PropertyService;
+import jakarta.annotation.security.PermitAll;
 
 @Route(value = "properties", layout = MainLayout.class)
-@jakarta.annotation.security.PermitAll // erlaubt allen angemeldeten Nutzern
+@PageTitle("Objekte")
+@PermitAll
+@CssImport("./styles/property-cards.css")   // ⬅️ CSS unten
 public class PropertyView extends VerticalLayout {
 
-    private final PropertyRepository repo;
+    private final PropertyService service;
+    private final Div grid = new Div();
 
-    private final Grid<Property> grid = new Grid<>(Property.class, false);
-    private final TextField name = new TextField("Name");
-    private final TextField address = new TextField("Adresse");
-    private final NumberField areaM2 = new NumberField("Fläche (m²)");
-    private final Button save = new Button("Speichern");
-    private final Button neu  = new Button("Neu");
-    private final Button del  = new Button("Löschen");
+    public PropertyView(PropertyService service) {
+        this.service = service;
 
-    private final Binder<Property> binder = new Binder<>(Property.class);
-    private Property current = new Property();
+        setSizeFull();
+        setPadding(true);
+        setSpacing(true);
 
-    public PropertyView(PropertyRepository repo) {
-        this.repo = repo;
+        H2 title = new H2("Objekte");
+        Button newBtn = new Button("Objekt anlegen", e -> UI.getCurrent().navigate("properties/new"));
+        newBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        grid.addColumn(Property::getId).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
-        grid.addColumn(Property::getName).setHeader("Name").setAutoWidth(true);
-        grid.addColumn(p -> p.getAddress() == null ? "" : p.getAddress()).setHeader("Adresse").setAutoWidth(true);
-        grid.addColumn(p -> p.getAreaM2() == null ? "" : p.getAreaM2()).setHeader("m²").setAutoWidth(true);
-        grid.setItems(repo.findAll());
-        grid.setHeight("55vh");
-        grid.asSingleSelect().addValueChangeListener(ev -> {
-            var sel = ev.getValue();
-            if (sel != null) { current = sel; binder.readBean(current); del.setEnabled(current.getId()!=null); }
-        });
+        HorizontalLayout header = new HorizontalLayout(title, newBtn);
+        header.setWidthFull();
+        header.setAlignItems(Alignment.CENTER);
+        header.expand(title);
 
-        binder.forField(name).asRequired("Name ist erforderlich")
-                .bind(Property::getName, Property::setName);
-        binder.forField(address).bind(Property::getAddress, Property::setAddress);
-        binder.forField(areaM2).withConverter(v -> v==null?null:v.doubleValue(), d->d)
-                .bind(Property::getAreaM2, Property::setAreaM2);
+        grid.addClassName("property-grid"); // CSS-Grid
+        grid.setSizeFull();
 
-        neu.addClickListener(e -> { current = new Property(); binder.readBean(current); grid.deselectAll(); del.setEnabled(false); });
-        save.addClickListener(e -> {
-            try {
-                if (!binder.writeBeanIfValid(current)) return;
-                var saved = repo.save(current);
-                refresh(); grid.select(saved);
-                del.setEnabled(true);
-                Notification.show("Gespeichert");
-            } catch (Exception ex) {
-                Notification.show("Fehler: "+ex.getMessage());
-            }
-        });
-        del.addClickListener(e -> {
-            if (current.getId()!=null) { repo.deleteById(current.getId()); refresh(); neu.click(); Notification.show("Gelöscht"); }
-        });
-        del.setEnabled(false);
-
-        var form = new HorizontalLayout(name, address, areaM2, save, neu, del);
-        name.setWidth("240px"); address.setWidth("300px"); areaM2.setWidth("140px");
-
-        add(form, grid);
-        setPadding(true); setSpacing(true); setSizeFull();
+        add(header, grid);
+        reload();
     }
 
-    private void refresh() { grid.setItems(repo.findAll()); }
+    private void reload() {
+        grid.removeAll();
+        for (Property p : service.listAll()) {
+            grid.add(buildCard(p));
+        }
+    }
+
+    private Div buildCard(Property p) {
+        Div card = new Div();
+        card.addClassName("property-card");
+
+        // Bild
+        Image img = createImage(p);
+        img.addClassName("thumb");
+        card.add(img);
+
+        // Inhalt
+        Div content = new Div();
+        content.addClassName("content");
+        H4 name = new H4(p.getName() == null ? "(Unbenannt)" : p.getName());
+        Paragraph addr = new Paragraph(p.getStreet() == null ? "" : p.getStreet());
+        addr.addClassName("subtitle");
+        content.add(name, addr);
+        card.add(content);
+
+        card.getElement().addEventListener("click", ev -> {
+            // TODO: später Detail-/Edit-View: "properties/{id}/edit"
+            // UI.getCurrent().navigate("properties/" + p.getId());
+        });
+        card.getStyle().set("cursor", "pointer");
+
+        return card;
+    }
+
+    private Image createImage(Property p) {
+        if (p.getImagePath() != null) {
+            StreamResource res = new StreamResource(p.getId() + "-img", () -> service.openImage(p.getImagePath()));
+            return new Image(res, "Bild");
+        }
+        // Platzhalter aus /static/images/placeholder.png
+        return new Image("images/placeholder.png", "Kein Bild");
+    }
 }
+
+
 
 

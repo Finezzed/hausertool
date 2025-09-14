@@ -1,0 +1,37 @@
+/* frontend/styles/property-cards.css */
+.property-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--lumo-space-l);
+}
+
+.property-card {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--lumo-box-shadow-s);
+  background: var(--lumo-base-color);
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 120ms ease, transform 120ms ease;
+}
+
+.property-card:hover {
+  box-shadow: var(--lumo-box-shadow-m);
+  transform: translateY(-2px);
+}
+
+.property-card .thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--lumo-contrast-10pct);
+}
+
+.property-card .content {
+  padding: var(--lumo-space-m);
+}
+
+.property-card .subtitle {
+  color: var(--lumo-secondary-text-color);
+  margin: 0;
+}

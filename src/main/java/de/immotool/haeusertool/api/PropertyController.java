@@ -40,12 +40,12 @@ public class PropertyController {
 
     // --- Mapper ---
     private PropertyDTO toDTO(Property p) {
-        return new PropertyDTO(p.getId(), p.getName(), p.getAddress(), p.getAreaM2());
+        return new PropertyDTO(p.getId(), p.getName(), p.getStreet(), p.getAreaM2());
     }
     private Property toEntity(PropertyDTO d) {
         var p = new Property();
         p.setName(d.name());
-        p.setAddress(d.address());
+        p.setStreet(d.address());
         p.setAreaM2(d.areaM2());
         return p;
     }
