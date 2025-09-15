@@ -41,16 +41,18 @@ public class PropertyService {
     }
 
     @Transactional
-    public Property update(Long id, @Valid Property update) {
-        var existing = repo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Property " + id + " not found"));
-        existing.setName(update.getName());
-        existing.setStreet(update.getStreet());
-        existing.setAreaM2(update.getAreaM2());
-        // Bildpfad könnte man hier optional auch übernehmen:
-        // existing.setImagePath(update.getImagePath());
-        return repo.save(existing);
+    public Property update(Long id, @Valid Property u) {
+        var p = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Property " + id + " not found"));
+        p.setStreet(u.getStreet());
+        p.setHausnr(u.getHausnr());
+        p.setPostleitzahl(u.getPostleitzahl());
+        p.setOrt(u.getOrt());
+        p.setAreaM2(u.getAreaM2());
+        p.setPurchaseDate(u.getPurchaseDate());
+        // p.setImagePath(u.getImagePath());   // wenn du Bildwechsel erlaubst
+        return repo.save(p);
     }
+
 
     @Transactional
     public void delete(Long id) {

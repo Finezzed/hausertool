@@ -12,9 +12,7 @@ public class Property {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank                      // Bean Validation: darf nicht leer sein
-    @Column(nullable = false)
-    private String name;
+
 
     @Column(name = "image_path")
     private String imagePath;
@@ -41,8 +39,6 @@ public class Property {
     // --- Getter/Setter ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
     public String getStreet() { return street; }
     public void setStreet(String street) { this.street = street; }
     public Double getPostleitzahl() { return postleitzahl; }

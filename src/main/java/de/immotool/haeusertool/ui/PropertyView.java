@@ -66,10 +66,9 @@ public class PropertyView extends VerticalLayout {
         // Inhalt
         Div content = new Div();
         content.addClassName("content");
-        H4 name = new H4(p.getName() == null ? "(Unbenannt)" : p.getName());
         Paragraph addr = new Paragraph(p.getStreet() == null ? "" : p.getStreet());
         addr.addClassName("subtitle");
-        content.add(name, addr);
+        content.add(addr);
         card.add(content);
 
         card.getElement().addEventListener("click", ev -> {
