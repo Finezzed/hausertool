@@ -1,4 +1,4 @@
-// src/main/java/de/immotool/haeusertool/ui/PropertyView.java
+
 package de.immotool.haeusertool.ui;
 
 import com.vaadin.flow.component.UI;
@@ -14,11 +14,13 @@ import com.vaadin.flow.router.Route;
 import de.immotool.haeusertool.model.Property;
 import de.immotool.haeusertool.service.PropertyService;
 import jakarta.annotation.security.PermitAll;
+import com.vaadin.flow.router.RouteParameters;
+
 
 @Route(value = "properties", layout = MainLayout.class)
 @PageTitle("Objekte")
 @PermitAll
-@CssImport("./styles/property-cards.css")   // ⬅️ CSS unten
+@CssImport("./styles/property-cards.css")
 public class PropertyView extends VerticalLayout {
 
     private final PropertyService service;
@@ -40,7 +42,7 @@ public class PropertyView extends VerticalLayout {
         header.setAlignItems(Alignment.CENTER);
         header.expand(title);
 
-        grid.addClassName("property-grid"); // CSS-Grid
+        grid.addClassName("property-grid");
         grid.setSizeFull();
 
         add(header, grid);
@@ -71,21 +73,29 @@ public class PropertyView extends VerticalLayout {
         content.add(addr);
         card.add(content);
 
-        card.getElement().addEventListener("click", ev -> {
-            // TODO: später Detail-/Edit-View: "properties/{id}/edit"
-            // UI.getCurrent().navigate("properties/" + p.getId());
-        });
+        // Navigation bei Klick
+        card.addClickListener(e ->
+                UI.getCurrent().navigate(
+                        PropertyDetailView.class,
+                        new RouteParameters("id", String.valueOf(p.getId()))
+                )
+        );
         card.getStyle().set("cursor", "pointer");
+
+        // (optional, aber hilfreich) – macht die Karte für Screenreader/Tab fokusierbar
+        card.getElement().setAttribute("role", "link");
+        card.getElement().setAttribute("tabindex", "0");
 
         return card;
     }
+
 
     private Image createImage(Property p) {
         if (p.getImagePath() != null) {
             StreamResource res = new StreamResource(p.getId() + "-img", () -> service.openImage(p.getImagePath()));
             return new Image(res, "Bild");
         }
-        // Platzhalter aus /static/images/placeholder.png
+
         return new Image("images/placeholder.png", "Kein Bild");
     }
 }

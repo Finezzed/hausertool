@@ -40,14 +40,20 @@ public class PropertyController {
 
     // --- Mapper ---
     private PropertyDTO toDTO(Property p) {
-        return new PropertyDTO(p.getId(), p.getStreet(), p.getHausnr(), p.getPostleitzahl(), p.getOrt(), p.getAreaM2());
+        return new PropertyDTO(
+                        p.getId(),
+                        p.getStreet(),
+                        p.getHausnr(),
+                        p.getPostleitzahl(),
+                        p.getOrt(),
+                        p.getAreaM2());
     }
     private Property toEntity(PropertyDTO d) {
         var p = new Property();
         p.setStreet(d.street());
-        p.setStreet(String.valueOf(d.hausnr()));
-        p.setStreet(String.valueOf(d.postleitzahl()));
-        p.setStreet(d.ort());
+        p.setHausnr((d.hausnr()));
+        p.setPostleitzahl(d.postleitzahl());
+        p.setOrt(d.ort());
         p.setAreaM2(d.areaM2());
         return p;
     }

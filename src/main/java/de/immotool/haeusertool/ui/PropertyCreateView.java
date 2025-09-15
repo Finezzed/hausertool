@@ -48,11 +48,11 @@ public class PropertyCreateView extends VerticalLayout {
         street.setRequiredIndicatorVisible(true);
         street.setWidthFull();
 
-        NumberField postleitzahl = new NumberField("Postleitzahl");
+        TextField postleitzahl = new TextField("Postleitzahl");
         postleitzahl.setRequiredIndicatorVisible(true);
         postleitzahl.setWidthFull();
 
-        NumberField hausnr = new NumberField("Haus-Nr.");
+        TextField hausnr = new TextField("Haus-Nr.");
         hausnr.setRequiredIndicatorVisible(true);
         hausnr.setWidthFull();
 

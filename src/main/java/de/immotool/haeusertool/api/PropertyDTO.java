@@ -1,10 +1,11 @@
 package de.immotool.haeusertool.api;
 
 
-public record PropertyDTO(Long id,
+public record PropertyDTO(
 
-                          String street,
-                          Double hausnr,
-                          Double postleitzahl,
-                          String ort,
-                          Double areaM2) {}
+        Long id,
+        String street,
+        String hausnr,
+        String postleitzahl,
+        String ort,
+        Double areaM2) {}

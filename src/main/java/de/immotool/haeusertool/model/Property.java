@@ -19,9 +19,9 @@ public class Property {
 
     private String street;
 
-    private Double postleitzahl;
+    private String postleitzahl;
 
-    private Double hausnr;
+    private String hausnr;
 
     private String ort;
 
@@ -41,10 +41,10 @@ public class Property {
     public void setId(Long id) { this.id = id; }
     public String getStreet() { return street; }
     public void setStreet(String street) { this.street = street; }
-    public Double getPostleitzahl() { return postleitzahl; }
-    public void setPostleitzahl(Double postleitzahl) { this.postleitzahl = postleitzahl; }
-    public Double getHausnr() { return hausnr; }
-    public void setHausnr(Double hausnr) { this.hausnr = hausnr; }
+    public String getPostleitzahl() { return postleitzahl; }
+    public void setPostleitzahl(String postleitzahl) { this.postleitzahl = postleitzahl; }
+    public String getHausnr() { return hausnr; }
+    public void setHausnr(String hausnr) { this.hausnr = hausnr; }
     public String getOrt() { return ort; }
     public void setOrt(String ort) { this.ort = ort; }
     public Double getAreaM2() { return areaM2; }
