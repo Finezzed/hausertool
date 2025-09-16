@@ -138,5 +138,8 @@ public class PropertyService {
     public Path resolveImage(String relativePath) {
         return relativePath == null ? null : storageRoot.resolve(relativePath).normalize();
     }
+    public java.util.Optional<de.immotool.haeusertool.model.Property> findById(Long id) {
+        return repo.findById(id);
+    }
 }
 
