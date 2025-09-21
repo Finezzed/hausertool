@@ -1,19 +1,20 @@
 /* frontend/styles/property-cards.css */
 .property-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--lumo-space-l);
+  /* 5 Spalten, jede min 260 px, wächst bis 1fr */
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;               /* Abstand zwischen den Karten */
+  align-items: start;      /* nicht strecken */
+  justify-items: center;   /* Karten mittig in der Spalte */
 }
 
+/* Jede einzelne Karte */
 .property-card {
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: var(--lumo-box-shadow-s);
-  background: var(--lumo-base-color);
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 120ms ease, transform 120ms ease;
+  width: 260px;            /* feste Breite */
+  height: 340px;           /* feste Höhe – nach Bedarf anpassen */
+  box-sizing: border-box;
 }
+
 
 .property-card:hover {
   box-shadow: var(--lumo-box-shadow-m);

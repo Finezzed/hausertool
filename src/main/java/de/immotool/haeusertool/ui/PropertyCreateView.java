@@ -1,9 +1,11 @@
 package de.immotool.haeusertool.ui;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
@@ -23,19 +25,34 @@ import de.immotool.haeusertool.model.Property;
 import de.immotool.haeusertool.service.PropertyService;
 import jakarta.annotation.security.PermitAll;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
+import java.util.Locale;
 
 @Route(value = "properties/new", layout = MainLayout.class)
 @PageTitle("Objekt anlegen")
 @PermitAll
+@JsModule("./cropper.js") // stellt window.openCropper(...) bereit
 public class PropertyCreateView extends VerticalLayout {
 
-    // temporär gemerkte Upload-Datei (wird beim Speichern verschoben)
+    private final PropertyService service;
+
+    // Upload / Bild
+    private final FileBuffer imgBuffer = new FileBuffer();
+    private final Upload imageUpload = new Upload(imgBuffer);
+    private final Image preview = new Image();
+
+    // temporär zu speichernde Bilddatei + Name (wird beim Speichern ins Storage verschoben)
     private Path pendingImageTemp;
     private String pendingImageName;
 
     public PropertyCreateView(PropertyService service) {
+        this.service = service;
+
         setSizeFull();
         setPadding(true);
         setSpacing(true);
@@ -43,18 +60,17 @@ public class PropertyCreateView extends VerticalLayout {
         H2 title = new H2("Objekt anlegen");
 
         // --- Felder ---
-
         TextField street = new TextField("Straße");
         street.setRequiredIndicatorVisible(true);
         street.setWidthFull();
 
-        TextField postleitzahl = new TextField("Postleitzahl");
-        postleitzahl.setRequiredIndicatorVisible(true);
-        postleitzahl.setWidthFull();
-
         TextField hausnr = new TextField("Haus-Nr.");
         hausnr.setRequiredIndicatorVisible(true);
-        hausnr.setWidthFull();
+        hausnr.setWidth("200px");
+
+        TextField postleitzahl = new TextField("Postleitzahl");
+        postleitzahl.setRequiredIndicatorVisible(true);
+        postleitzahl.setWidth("200px");
 
         TextField ort = new TextField("Ort");
         ort.setRequiredIndicatorVisible(true);
@@ -68,41 +84,43 @@ public class PropertyCreateView extends VerticalLayout {
         DatePicker kaufdatum = new DatePicker("Kaufdatum");
         kaufdatum.setPlaceholder("TT.MM.JJJJ");
         kaufdatum.setClearButtonVisible(true);
-        kaufdatum.setLocale(java.util.Locale.GERMANY);
+        kaufdatum.setLocale(Locale.GERMANY);
 
         // --- Bild-Upload + Vorschau ---
-        FileBuffer imgBuffer = new FileBuffer();
-        Upload imageUpload = new Upload(imgBuffer);
         imageUpload.setAcceptedFileTypes("image/jpeg", "image/png", "image/webp");
         imageUpload.setMaxFiles(1);
         imageUpload.setDropAllowed(false);
         imageUpload.setUploadButton(new Button("Titelbild auswählen"));
 
-        Image preview = new Image();
         preview.setAlt("Vorschau");
         preview.setMaxWidth("320px");
         preview.getStyle().set("border-radius", "8px");
 
         imageUpload.addSucceededListener(ev -> {
+            // 1) Temp-Datei & Name merken
             pendingImageTemp = imgBuffer.getFileData().getFile().toPath();
             pendingImageName = ev.getFileName();
 
-            // kleine Vorschau aus Temp-Datei
+            // 2) Vorschau aus Temp-Datei
             if (pendingImageTemp != null && Files.exists(pendingImageTemp)) {
                 StreamResource res = new StreamResource(pendingImageName, () -> {
-                    try {
-                        return Files.newInputStream(pendingImageTemp);
-                    } catch (Exception e) {
-                        return null;
-                    }
+                    try { return Files.newInputStream(pendingImageTemp); }
+                    catch (Exception e) { return InputStream.nullInputStream(); }
                 });
                 preview.setSrc(res);
+
+                // 3) Cropper-Dialog öffnen (JS) — beachte: host = diese View!
+                UI.getCurrent().getPage().executeJs(
+                        "window.openCropper($0, $1, $2)",
+                        getElement(),              // host (View mit @ClientCallable)
+                        preview.getElement(),      // Bildquelle/Vorschau
+                        pendingImageName           // Original-Dateiname
+                );
             }
         });
 
         // --- Binder ---
         Binder<Property> binder = new Binder<>(Property.class);
-
         binder.forField(street).asRequired("Adresse ist erforderlich")
                 .bind(Property::getStreet, Property::setStreet);
         binder.forField(postleitzahl).asRequired("Postleitzahl ist erforderlich")
@@ -123,7 +141,7 @@ public class PropertyCreateView extends VerticalLayout {
                 binder.writeBean(p);
 
                 // Bild dauerhaft speichern und Pfad ins Property setzen
-                if (pendingImageTemp != null) {
+                if (pendingImageTemp != null && Files.exists(pendingImageTemp)) {
                     String rel = service.storeImage(pendingImageTemp, pendingImageName);
                     p.setImagePath(rel);
                 }
@@ -138,8 +156,7 @@ public class PropertyCreateView extends VerticalLayout {
         });
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        Button cancel = new Button("Abbrechen",
-                e -> UI.getCurrent().navigate("properties"));
+        Button cancel = new Button("Abbrechen", e -> UI.getCurrent().navigate("properties"));
 
         // --- Layout ---
         FormLayout form = new FormLayout(
@@ -164,7 +181,60 @@ public class PropertyCreateView extends VerticalLayout {
 
         add(title, form, actions);
     }
+
+    /**
+     * Wird von frontend/cropper.js nach Klick auf "Übernehmen" aufgerufen.
+     * @param dataUrl Base64-Data-URL (z. B. "data:image/jpeg;base64,...")
+     * @param originalFileName ursprünglicher Dateiname
+     */
+    @ClientCallable
+    private void saveCropped(String dataUrl, String originalFileName) {
+        try {
+            int comma = dataUrl.indexOf(',');
+            if (comma < 0) throw new IllegalArgumentException("Ungültige Data-URL");
+            String header = dataUrl.substring(0, comma); // z.B. data:image/jpeg;base64
+            String base64 = dataUrl.substring(comma + 1);
+            byte[] bytes = Base64.getDecoder().decode(base64);
+
+            // Endung aus MIME
+            String ext = extensionFromDataUrlHeader(header); // ".jpg" / ".png" / ".webp"
+
+            // neue Temp-Datei schreiben
+            Path tmp = Files.createTempFile("hausertool-cropped-", ext);
+            Files.write(tmp, bytes);
+
+            // alte pending-Datei ersetzen
+            if (pendingImageTemp != null && Files.exists(pendingImageTemp)) {
+                try { Files.deleteIfExists(pendingImageTemp); } catch (IOException ignore) {}
+            }
+            pendingImageTemp = tmp;
+            pendingImageName = deriveCroppedName(originalFileName, ext);
+
+            // Vorschau aktualisieren
+            StreamResource res = new StreamResource(pendingImageName, () -> new ByteArrayInputStream(bytes));
+            preview.setSrc(res);
+
+            Notification.show("Ausschnitt übernommen.", 2000, Notification.Position.BOTTOM_CENTER);
+        } catch (Exception ex) {
+            Notification.show("Zuschneiden fehlgeschlagen: " + ex.getMessage(), 4000, Notification.Position.MIDDLE);
+        }
+    }
+
+    private static String extensionFromDataUrlHeader(String header) {
+        if (header.contains("image/png")) return ".png";
+        if (header.contains("image/webp")) return ".webp";
+        return ".jpg"; // Default
+    }
+
+    private static String deriveCroppedName(String original, String newExt) {
+        if (original == null || original.isBlank()) return "bild" + newExt;
+        int dot = original.lastIndexOf('.');
+        String base = (dot > 0) ? original.substring(0, dot) : original;
+        return base + "-cropped" + newExt;
+    }
 }
+
+
 
 
 

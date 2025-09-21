@@ -43,9 +43,10 @@ public class PropertyView extends VerticalLayout {
         header.expand(title);
 
         grid.addClassName("property-grid");
-        grid.setSizeFull();
-
+        grid.setWidthFull();
+        grid.setHeight(null);
         add(header, grid);
+
         reload();
     }
 
